@@ -3,7 +3,11 @@
   "description": "This incident type typically involves checking the replication factor on a Kafka cluster to ensure that it is not configured to be too low. A low replication factor can lead to data loss, and it is important to verify that the system is configured correctly to prevent any issues. This may involve checking configuration settings, verifying that replication is working as expected, and making any necessary adjustments to ensure that the replication factor is set at an appropriate level.",
   "params": [
     {
-      "name": "TOPIC_NAME",
+      "name": "KAFKA_CONFIG_DIRECTORY",
+      "value": ""
+    },
+    {
+      "name": "ZOOKEEPER_HOST",
       "value": ""
     },
     {
@@ -15,19 +19,15 @@
       "value": ""
     },
     {
-      "name": "KAFKA_CONFIG_DIRECTORY",
-      "value": ""
-    },
-    {
       "name": "KAFKA_PORT",
       "value": ""
     },
     {
-      "name": "KAFKA_HOST",
+      "name": "DESIRED_REPLICATION_FACTOR",
       "value": ""
     },
     {
-      "name": "ZOOKEEPER_HOST",
+      "name": "TOPIC_NAME",
       "value": ""
     },
     {
@@ -35,7 +35,7 @@
       "value": ""
     },
     {
-      "name": "DESIRED_REPLICATION_FACTOR",
+      "name": "KAFKA_HOST",
       "value": ""
     },
     {
@@ -164,7 +164,7 @@
       "name": "cell_19",
       "type": "OP_LANG",
       "enabled": true,
-      "content": "host | host_name=$HOST_NAME | invoke_kafka_replication_update($PATH_TO_KAFKA_CONFIG_FILE, $DESIRED_REPLICATION_FACTOR)"
+      "content": "host | host_name=$HOST_NAME | invoke_change_kafka_replication_factor($PATH_TO_KAFKA_CONFIG_FILE, $DESIRED_REPLICATION_FACTOR)"
     }
   ]
 }
