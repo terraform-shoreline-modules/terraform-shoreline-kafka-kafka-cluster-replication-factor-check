@@ -1,29 +1,9 @@
 {
   "name": "kafka_cluster_replication_factor_check",
-  "description": "This incident type typically involves checking the replication factor on a Kafka cluster to ensure that it is not configured to be too low. A low replication factor can lead to data loss, and it is important to verify that the system is configured correctly to prevent any issues. This may involve checking configuration settings, verifying that replication is working as expected, and making any necessary adjustments to ensure that the replication factor is set at an appropriate level.",
+  "description": "In a Kafka cluster, replication factor is the number of copies of a topic's partitions across different brokers. The replication factor is set at the time of topic creation and cannot be changed once the topic is created. In case the replication factor is less than the minimum required number, there is a risk of data loss if one or more brokers go down. This incident type involves checking the replication factor of Kafka clusters to ensure that the number of replicas is sufficient, and that data is safe in case of a broker failure.",
   "params": [
     {
-      "name": "KAFKA_CONFIG_DIRECTORY",
-      "value": ""
-    },
-    {
       "name": "ZOOKEEPER_HOST",
-      "value": ""
-    },
-    {
-      "name": "PATH_TO_KAFKA_CONFIG_FILE",
-      "value": ""
-    },
-    {
-      "name": "PARTITION_NUMBER",
-      "value": ""
-    },
-    {
-      "name": "KAFKA_PORT",
-      "value": ""
-    },
-    {
-      "name": "DESIRED_REPLICATION_FACTOR",
       "value": ""
     },
     {
@@ -31,11 +11,15 @@
       "value": ""
     },
     {
-      "name": "ZOOKEEPER_PORT",
+      "name": "REPLICATION_FACTOR",
       "value": ""
     },
     {
-      "name": "KAFKA_HOST",
+      "name": "PATH_TO_KAFKA_HOME",
+      "value": ""
+    },
+    {
+      "name": "ZOOKEEPER_PORT",
       "value": ""
     },
     {
@@ -56,115 +40,79 @@
       "name": "cell_1",
       "type": "MARKDOWN",
       "enabled": true,
-      "content": "## Kafka Cluster Replication Factor Check\nThis incident type typically involves checking the replication factor on a Kafka cluster to ensure that it is not configured to be too low. A low replication factor can lead to data loss, and it is important to verify that the system is configured correctly to prevent any issues. This may involve checking configuration settings, verifying that replication is working as expected, and making any necessary adjustments to ensure that the replication factor is set at an appropriate level."
+      "content": "## Kafka Cluster Replication Factor Check\nIn a Kafka cluster, replication factor is the number of copies of a topic's partitions across different brokers. The replication factor is set at the time of topic creation and cannot be changed once the topic is created. In case the replication factor is less than the minimum required number, there is a risk of data loss if one or more brokers go down. This incident type involves checking the replication factor of Kafka clusters to ensure that the number of replicas is sufficient, and that data is safe in case of a broker failure."
     },
     {
       "name": "cell_2",
       "type": "MARKDOWN",
       "enabled": true,
-      "content": "## List all topics in the Kafka cluster"
+      "content": "## Check the replication factor of a specific topic"
     },
     {
       "name": "cell_3",
       "type": "OP_LANG",
       "enabled": true,
-      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-topics.sh --list --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT}`"
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-topics.sh --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} --describe --topic ${TOPIC_NAME}`"
     },
     {
       "name": "cell_4",
       "type": "MARKDOWN",
       "enabled": true,
-      "content": "## Describe a specific topic to view replication factor and other details"
+      "content": "## Check the replication factor of all topics in a cluster"
     },
     {
       "name": "cell_5",
       "type": "OP_LANG",
       "enabled": true,
-      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-topics.sh --describe --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} --topic ${TOPIC_NAME}`"
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-topics.sh --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} --list | xargs -n1 kafka-topics.sh --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} --describe --topic`"
     },
     {
       "name": "cell_6",
       "type": "MARKDOWN",
       "enabled": true,
-      "content": "## View the status of all brokers in the cluster"
+      "content": "## Check the number of brokers in a cluster"
     },
     {
       "name": "cell_7",
       "type": "OP_LANG",
       "enabled": true,
-      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-broker-api-versions.sh --bootstrap-server ${KAFKA_HOST}:${KAFKA_PORT} --api-version-request`"
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `zookeeper-shell.sh ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} ls /brokers/ids | grep '\\[' | awk -F'[][]' '{print $2}' | wc -l`"
     },
     {
       "name": "cell_8",
       "type": "MARKDOWN",
       "enabled": true,
-      "content": "## Check the replication status of a specific topic partition"
+      "content": "## Check the number of replicas of a topic's partitions"
     },
     {
       "name": "cell_9",
       "type": "OP_LANG",
       "enabled": true,
-      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list ${KAFKA_HOST}:${KAFKA_PORT} --topic ${TOPIC_NAME} --partition ${PARTITION_NUMBER} --time -1 --offsets 1 | awk -F \":\" '{sum += $3} END {print sum}'`"
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-topics.sh --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} --describe --topic ${TOPIC_NAME} | grep -i replica`"
     },
     {
       "name": "cell_10",
       "type": "MARKDOWN",
       "enabled": true,
-      "content": "## Check the minimum ISR (in-sync replicas) count for a specific topic partition"
+      "content": "## Check the number of in-sync replicas of a topic's partitions"
     },
     {
       "name": "cell_11",
       "type": "OP_LANG",
       "enabled": true,
-      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-topics.sh --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} --describe --topic ${TOPIC_NAME} | grep \"Partition:${PARTITION_NUMBER}\" | awk -F \" \" '{print $8}'`"
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-topics.sh --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} --describe --topic ${TOPIC_NAME} | grep -i isr`"
     },
     {
       "name": "cell_12",
       "type": "MARKDOWN",
       "enabled": true,
-      "content": "## Check the number of replicas for a specific topic partition"
+      "content": "## Increase the replication factor of the topic so that it meets the minimum required number. This can be done using the Kafka command line tools or the Kafka API."
     },
     {
       "name": "cell_13",
       "type": "OP_LANG",
       "enabled": true,
-      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-topics.sh --zookeeper ${ZOOKEEPER_HOST}:${ZOOKEEPER_PORT} --describe --topic ${TOPIC_NAME} | grep \"Partition:${PARTITION_NUMBER}\" | awk -F \" \" '{print $6}'`"
-    },
-    {
-      "name": "cell_14",
-      "type": "MARKDOWN",
-      "enabled": true,
-      "content": "## Check the number of available brokers in the cluster"
-    },
-    {
-      "name": "cell_15",
-      "type": "OP_LANG",
-      "enabled": true,
-      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `kafka-broker-api-versions.sh --bootstrap-server ${KAFKA_HOST}:${KAFKA_PORT} --api-version-request | grep \"\\[Broker\\]\"`"
-    },
-    {
-      "name": "cell_16",
-      "type": "MARKDOWN",
-      "enabled": true,
-      "content": "## Check the Kafka configuration to see if replication factor is set correctly"
-    },
-    {
-      "name": "cell_17",
-      "type": "OP_LANG",
-      "enabled": true,
-      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `grep -r \"replication\\.factor\" ${KAFKA_CONFIG_DIRECTORY}`"
-    },
-    {
-      "name": "cell_18",
-      "type": "MARKDOWN",
-      "enabled": true,
-      "content": "## First, check the replication factor configuration setting on the Kafka cluster to verify that it is set at an appropriate level. This should be done using the Kafka command line tools or a web-based management interface, depending on how the cluster is configured."
-    },
-    {
-      "name": "cell_19",
-      "type": "OP_LANG",
-      "enabled": true,
-      "content": "host | host_name=$HOST_NAME | invoke_change_kafka_replication_factor($PATH_TO_KAFKA_CONFIG_FILE, $DESIRED_REPLICATION_FACTOR)"
+      "content": "host | host_name=$HOST_NAME | invoke_increase_replication_factor($ZOOKEEPER_HOST, $TOPIC_NAME, $REPLICATION_FACTOR, $PATH_TO_KAFKA_HOME, $ZOOKEEPER_PORT)"
     }
   ]
 }
